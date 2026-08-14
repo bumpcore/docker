@@ -1,7 +1,4 @@
-# Shared runtime/build base for Bumpcore Laravel + Octane apps.
-# Pin SWOOLE_TAG when you need a specific PHP/Swoole pair.
-ARG SWOOLE_TAG=php8.5
-FROM phpswoole/swoole:${SWOOLE_TAG}
+FROM phpswoole/swoole:6.2.1-php8.4
 
 ENV DEBIAN_FRONTEND=noninteractive \
     COMPOSER_ALLOW_SUPERUSER=1

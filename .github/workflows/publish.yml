@@ -10,19 +10,27 @@ permissions:
   packages: write
 
 jobs:
+  discover:
+    name: Discover
+    runs-on: ubuntu-latest
+    outputs:
+      images: ${{ steps.list.outputs.images }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - id: list
+        run: |
+          images=$(find images -mindepth 1 -maxdepth 1 -type d -printf '%f\n' | sort | jq -R -s -c 'split("\n") | map(select(length > 0))')
+          echo "images=$images" >> "$GITHUB_OUTPUT"
+
   publish:
-    name: ${{ matrix.tag }}
+    name: ${{ matrix.image }}
+    needs: discover
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - tag: '8.5'
-            swoole_tag: php8.5
-            latest: true
-          - tag: '8.4'
-            swoole_tag: 6.2.1-php8.4
-            latest: false
+        image: ${{ fromJson(needs.discover.outputs.images) }}
     steps:
       - uses: actions/checkout@v4
 
@@ -34,15 +42,11 @@ jobs:
 
       - uses: docker/setup-buildx-action@v3
 
-      - name: Build and push
-        uses: docker/build-push-action@v6
+      - uses: docker/build-push-action@v6
         with:
-          context: .
+          context: images/${{ matrix.image }}
+          file: images/${{ matrix.image }}/Dockerfile
           push: true
-          build-args: |
-            SWOOLE_TAG=${{ matrix.swoole_tag }}
-          tags: |
-            ghcr.io/bumpcore/php-swoole-bun:${{ matrix.tag }}
-            ${{ matrix.latest && 'ghcr.io/bumpcore/php-swoole-bun:latest' || '' }}
-          cache-from: type=gha,scope=${{ matrix.tag }}
-          cache-to: type=gha,mode=max,scope=${{ matrix.tag }}
+          tags: ghcr.io/bumpcore/${{ matrix.image }}:latest
+          cache-from: type=gha,scope=${{ matrix.image }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.image }}
