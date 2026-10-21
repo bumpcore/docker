@@ -1,4 +1,10 @@
-FROM phpswoole/swoole:php8.5
+# The official image instead of phpswoole/swoole:php8.5, which still shipped PHP 8.5.11 hours
+# after the PHP2Shell fix (CVE-2026-109618 / 109619). Swoole and the extensions that image
+# bundled (redis, sockets, pdo_mysql) are installed below.
+FROM php:8.5-cli
+
+# Refuse to build on PHP without the PHP2Shell fix.
+RUN php -r 'exit(version_compare(PHP_VERSION, "8.5.12", ">=") ? 0 : 1);'
 
 ENV DEBIAN_FRONTEND=noninteractive \
     COMPOSER_ALLOW_SUPERUSER=1
@@ -19,8 +25,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         gd \
         intl \
         pcntl \
+        pdo_mysql \
         pdo_pgsql \
         pgsql \
+        redis \
+        sockets \
+        swoole \
         zip
 
 WORKDIR /var/www/html
