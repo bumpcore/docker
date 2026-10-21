@@ -28,9 +28,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         pdo_mysql \
         pdo_pgsql \
         pgsql \
-        redis \
         sockets \
-        swoole \
-        zip
+        zip \
+    # pecl.php.net kept dropping downloads from CI on 2026-10-21, so the PECL extensions are
+    # retried rather than failing the whole image on one bad download.
+    && for attempt in 1 2 3 4 5; do install-php-extensions redis swoole && break; sleep 30; done \
+    && php -m | grep -qx redis \
+    && php -m | grep -qx swoole
 
 WORKDIR /var/www/html
